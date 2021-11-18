@@ -1,0 +1,124 @@
+-- ---
+-- Globals
+-- ---
+
+-- SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
+-- SET FOREIGN_KEY_CHECKS=0;
+
+-- ---
+-- Table 'reviews'
+--
+-- ---
+
+DROP TABLE IF EXISTS `reviews`;
+
+CREATE TABLE `reviews` (
+  `id` INTEGER NULL AUTO_INCREMENT DEFAULT NULL,
+  `rating` INTEGER NULL DEFAULT NULL,
+  `summary` VARCHAR(60) NULL DEFAULT NULL,
+  `recommend` bit NULL DEFAULT NULL,
+  `response` VARCHAR NULL DEFAULT NULL,
+  `body` VARCHAR(250) NULL DEFAULT NULL,
+  `date` DATE NULL DEFAULT NULL,
+  `name` VARCHAR NULL DEFAULT NULL,
+  `helpfulness` INTEGER NULL DEFAULT NULL,
+  `email` VARCHAR NULL DEFAULT NULL,
+  `product_id` INTEGER NOT NULL DEFAULT NULL,
+  `photos` MEDIUMTEXT NULL DEFAULT NULL,
+  PRIMARY KEY (`id`, `product_id`)
+);
+
+-- ---
+-- Table 'characteristics'
+--
+-- ---
+
+DROP TABLE IF EXISTS `characteristics`;
+
+CREATE TABLE `characteristics` (
+  `id` INTEGER NULL AUTO_INCREMENT DEFAULT NULL,
+  `characteristic` VARCHAR(8) NULL DEFAULT NULL,
+  `value` DECIMAL NULL DEFAULT NULL,
+  `review_id` INTEGER NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+);
+
+-- ---
+-- Table 'recommended'
+--
+-- ---
+
+DROP TABLE IF EXISTS `recommended`;
+
+CREATE TABLE `recommended` (
+  `id` INTEGER NULL AUTO_INCREMENT DEFAULT NULL,
+  `true` INTEGER NULL DEFAULT NULL,
+  `false` INTEGER NULL DEFAULT NULL,
+  `product_id` INTEGER NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+);
+
+-- ---
+-- Table 'ratings'
+--
+-- ---
+
+DROP TABLE IF EXISTS `ratings`;
+
+CREATE TABLE `ratings` (
+  `id` INTEGER NULL AUTO_INCREMENT DEFAULT NULL,
+  `1` INTEGER NULL DEFAULT NULL,
+  `2` INTEGER NULL DEFAULT NULL,
+  `3` INTEGER NULL DEFAULT NULL,
+  `4` INTEGER NULL DEFAULT NULL,
+  `5` INTEGER NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+);
+
+-- ---
+-- Table 'photos'
+--
+-- ---
+
+DROP TABLE IF EXISTS `photos`;
+
+CREATE TABLE `photos` (
+  `id` INTEGER NULL AUTO_INCREMENT DEFAULT NULL,
+  `url` MEDIUMTEXT NULL DEFAULT NULL,
+  `review_id` INTEGER NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+);
+
+-- ---
+-- Foreign Keys
+-- ---
+
+ALTER TABLE `characteristics` ADD FOREIGN KEY (review_id) REFERENCES `reviews` (`id`);
+ALTER TABLE `recommended` ADD FOREIGN KEY (product_id) REFERENCES `reviews` (`product_id`);
+ALTER TABLE `ratings` ADD FOREIGN KEY (id) REFERENCES `reviews` (`id`);
+ALTER TABLE `photos` ADD FOREIGN KEY (review_id) REFERENCES `reviews` (`id`);
+
+-- ---
+-- Table Properties
+-- ---
+
+-- ALTER TABLE `reviews` ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+-- ALTER TABLE `characteristics` ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+-- ALTER TABLE `recommended` ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+-- ALTER TABLE `ratings` ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+-- ALTER TABLE `photos` ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+
+-- ---
+-- Test Data
+-- ---
+
+-- INSERT INTO `reviews` (`id`,`rating`,`summary`,`recommend`,`response`,`body`,`date`,`name`,`helpfulness`,`email`,`product_id`,`photos`) VALUES
+-- ('','','','','','','','','','','','');
+-- INSERT INTO `characteristics` (`id`,`characteristic`,`value`,`review_id`) VALUES
+-- ('','','','');
+-- INSERT INTO `recommended` (`id`,`true`,`false`,`product_id`) VALUES
+-- ('','','','');
+-- INSERT INTO `ratings` (`id`,`1`,`2`,`3`,`4`,`5`) VALUES
+-- ('','','','','','');
+-- INSERT INTO `photos` (`id`,`url`,`review_id`) VALUES
+-- ('','','');
