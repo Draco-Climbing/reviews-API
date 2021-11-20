@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "mocha ./spec/serverspec.js",
+    "test": "mocha -R nyan ./spec/serverspec.js",
     "start": "nodemon ./server/index.js"
   },
   "repository": {
