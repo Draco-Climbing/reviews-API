@@ -5,6 +5,10 @@ let app = express();
 
 app.use(express.json());
 
+/*
+ /reviews/ route is using a function imported from database file, read
+ read uses .find() and does the filtering/sorting/object creation and then returns a promise
+*/
 app.get('/reviews/', (req, res) => {
   console.log(`responding to GET request on /reviews/ for ${JSON.stringify(req.query)}`);
 
@@ -42,19 +46,28 @@ app.get('/reviews/', (req, res) => {
   }
 })
 
+/*
+ The /reviews/meta/ route will be using the aggregation pipeline to query, sort, and build
+ the object being returned from mongoDB
+*/
 app.get('/reviews/meta/', (req, res) => {
   console.log(`responding to GET request on /reviews/meta/ for ${JSON.stringify(req.query)}`);
+
+  // use aggregation to pipe stages used to query and build return object
   db.collection('characteristics')
     .aggregate([
       {$match: {product_id: parseInt(req.query.product_id)}},
       {$project: {name: 1, _id: 0}},
     ])
-    .toArray((err, results) => {
+    .toArray((err, characteristics) => {
       if (err) {
         PromiseRejectionEvent(console.log('error getting characteristics'));
         res.status(404).send('error getting characteristics');
       } else {
-        res.send(results);
+        res.send({
+          product_id: req.query.product_id,
+          characteristics
+        });
       }
     });
 
