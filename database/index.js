@@ -16,10 +16,6 @@ var Schema = mongoose.Schema;
 // will also need to update document during PUT request to
 // /reviews/:review_id/report route and /reviews/:review_id/helpful
 const reviewsSchema = new Schema({
-  _id: {
-    type: Schema.Types.ObjectId,
-    select: false
-  },
   id: {
     type: Number,
     select: false
@@ -37,14 +33,19 @@ const reviewsSchema = new Schema({
   // data will come from reviews.csv
   response: {
     type: String,
-    required: false
+    required: true,
+    default: null
   },
   // data will come from reviews.csv
   body: String,
   // data will come from reviews.csv
   date: Date,
   // data will come from reviews.csv
-  reported: Boolean,
+  reported: {
+    type: Boolean,
+    required: true,
+    default: false
+  },
   // data will come from reviews.csv
   reviewer_name: String,
   // data will come from reviews.csv
@@ -53,7 +54,8 @@ const reviewsSchema = new Schema({
   helpfulness: Number,
 }, {
   toJSON: {virtuals: true},
-  toObject: {virtuals: true}
+  toObject: {virtuals: true},
+  versionKey: false
 });
 
 // will be updated in the POST /reviews request
@@ -70,7 +72,7 @@ const reviewsphotosSchema = new Schema({
     localField: 'review_id',
     foreignField: 'review_id'
   },
-});
+}, {versionKey: false});
 
 // will be queried in GET /reviews/meta request
 // value will be updated in POST /reviews/ request
@@ -86,13 +88,13 @@ const characteristicReviewsSchema = new Schema({
     type: Number,
     ref: 'characteristics'
   }
-});
+}, {versionKey: false});
 
 const characteristicsSchema = new Schema({
   _id: Number,
   product_id: Number,
   name: String,
-});
+}, {versionKey: false});
 
 // create virtual field for reviews that will be used in virtual population
 reviewsSchema.virtual('photos', {
@@ -106,24 +108,11 @@ let reviewsphotos = mongoose.model('reviewsphotos', reviewsphotosSchema);
 let characteristicReviews = mongoose.model('characteristicreviews', characteristicReviewsSchema);
 let characteristics = mongoose.model('characteristics', characteristicsSchema);
 
-// export function create(type, entry) {
-//   let document;
-
-//   if (type === 'reviews') {
-//     document = new reviews(entry);
-//   } else if (type === 'photos') {
-//     document = new reviewsPhotos(entry);
-//   } else if (type === 'characteristics') {
-//     document = new characteristicReviews(entry);
-//     // document = new characteristics(entry);
-//   }
-
-//   db.collection(type).insertOne(document)
-//     .catch(console.log);
-// };
+const db = mongoose.connection;
+export default db;
 
 export function read(type, query = {}) {
-  console.log('will try to read database')
+  console.log(`going to read database for ${type}`)
 
   if (type === 'reviews') {
     var sortObject;
@@ -141,7 +130,9 @@ export function read(type, query = {}) {
       .skip(query.count * (query.page - 1))
       .limit(query.count)
       .populate({ path: 'photos', select: 'url id -_id -review_id' })
+      //
       .select({
+        '_id': 0,
         'review_id': 1,
         'rating': 1,
         'summary': 1,
@@ -155,10 +146,83 @@ export function read(type, query = {}) {
       })
       .exec();
   } else if (type === 'characteristics') {
-    return characteristics.find({ 'product_id': query.product_id })
-      .select({_id: 0, name: 1})
+    return [
+      reviews.aggregate([
+        {$match: { product_id: query.product_id}},
+        {$project: {_id: 0, recommend: 1, rating: 1}},
+        // //  trying to make two buckets where things are grouped by rating and by recommend
+        // {$bucket: {
+        //   groupBy: '$rating',
+        //   boundaries: [0, 2, 3, 4, 6],
+        //   default: 'no_rating',
+        //   output: {
+        //     rating_count: {$sum: 1},
+        //   }
+        // }}
+      ]),
+      characteristics.aggregate([
+        {$match: { product_id: query.product_id}},
+        {$lookup: {
+          from: 'characteristicreviews',
+          localField: '_id',
+          foreignField: 'characteristic_id',
+          as: 'value',
+        }},
+        {$project: {_id: 0, product_id: 0}}
+      ])
+    ];
+  } else if (type === 'lastReviewId') {
+    return reviews.findOne({})
+      .sort({review_id: -1}) // need to get the last review_id
+      .select({_id: 0, review_id: 1})
+      .exec();
+  } else if (type === 'lastCharacteristicReviewId') {
+    return characteristicReviews.findOne({})
+      .sort({_id: -1}) // need to get the last _id
+      .select({_id: 1})
+      .exec();
+  } else if (type === 'lastPhotoId') {
+    return reviewsphotos.findOne({})
+      .sort({id: -1}) // need to get the last id
+      .select({_id: 0, id: 1})
       .exec();
   }
 };
 
-export const db = mongoose.connection;
+export function create(type, document) {
+  if (type === 'review') {
+    return reviews.create(document, null, (err, result) => {
+      if (err) {
+        console.log(err);
+        return handleError(err);
+      } else {
+        console.log(result);
+        return result;
+      }
+    });
+  } else if (type === 'reviewphotos') {
+    return reviewsphotos.create(document, null, (err, result) => {
+      if (err) {
+        console.log(err);
+        return handleError(err);
+      } else {
+        console.log(result);
+        return result;
+      }
+    });
+  } else if (type === 'characteristicreview') {
+    return characteristicReviews.create(document, null, (err, result) => {
+      if (err) {
+        console.log(err);
+        return handleError(err);
+      } else {
+        console.log(result);
+        return result;
+      }
+    });
+  }
+}
+
+export function update() {
+  //
+}
