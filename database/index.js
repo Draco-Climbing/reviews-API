@@ -223,6 +223,14 @@ export function create(type, document) {
   }
 }
 
-export function update() {
-  //
+export function update(type, review_id) {
+  if (type === 'helpful') {
+    return reviews.updateOne({ review_id }, {
+      $inc: {'helpfulness': 1}
+    }).exec()
+  } else if (type === 'report') {
+    return reviews.updateOne({ review_id }, {
+      $set: {'reported': true}
+    }).exec()
+  }
 }

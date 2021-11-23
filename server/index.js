@@ -1,3 +1,4 @@
+import axios from 'axios';
 import express, { response } from 'express'
 import db, {read, create, update} from '../database/index.js'
 
@@ -178,7 +179,7 @@ app.post('/reviews/', (req, res) => {
         )
         .then(response => {
           console.log(response);
-          res.status(201).send();
+          res.status(201).send('review was created successfully');
         })
         .catch(err => {
           console.log(err);
@@ -189,7 +190,48 @@ app.post('/reviews/', (req, res) => {
       console.log(err);
       res.status(500).send(err);
     })
+});
 
+app.put('/reviews/:review_id/helpful', (req, res) => {
+  if (!req.params.review_id) {
+    res.status(404).send('Error: invalid review_id provided');
+  } else {
+    console.log(req.params);
+    update('helpful', req.params.review_id)
+      .then((response) => {
+        if (response.acknowledged) {
+          console.log(response)
+          res.status(204).send();
+        } else {
+          res.status(500).send('server error marking review as helpful');
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        res.status(500).send('server error marking review as helpful');
+      })
+  }
+});
+
+app.put('/reviews/:review_id/report', (req, res) => {
+  if (!req.params.review_id) {
+    res.status(404).send('Error: invalid review_id provided');
+  } else {
+    console.log(req.params);
+    update('report', req.params.review_id)
+      .then((response) => {
+        if (response.acknowledged) {
+          console.log(response)
+          res.status(204).send();
+        } else {
+          res.status(500).send('server error reporting review');
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        res.status(500).send('server error reporting review');
+      })
+  }
 });
 
 let port = (process.env.PORT || 8080);
