@@ -1,5 +1,5 @@
-import express from 'express'
-import {db, read} from '../database/index.js'
+import express, { response } from 'express'
+import db, {read, create, update} from '../database/index.js'
 
 let app = express();
 
@@ -14,7 +14,8 @@ app.get('/reviews/', (req, res) => {
 
   // ensure product_id query value is passed in
   if (req.query.product_id === undefined) {
-    res.send('Error: invalid product_id provided');
+    res.status(404).send('Error: invalid product_id provided');
+    return;
   } else {
     // read will already incorporate the sort and limit numbers
     read('reviews', {
@@ -32,6 +33,7 @@ app.get('/reviews/', (req, res) => {
           res.status(404).send('There are no reviews for that product_id or product_id does not exist.');
         }
         console.log(results);
+        results[response] = results[response] === 'null' ? null : results[response];
 
         console.log('finished searching');
         res.send({
@@ -41,7 +43,10 @@ app.get('/reviews/', (req, res) => {
           results,
         });
       })
-      .catch(console.log);
+      .catch(err => {
+        console.log(err);
+        res.status(500).send(err);
+      });
 
   }
 })
@@ -50,31 +55,141 @@ app.get('/reviews/', (req, res) => {
  The /reviews/meta/ route will be using the aggregation pipeline to query, sort, and build
  the object being returned from mongoDB
 */
-app.get('/reviews/meta/', (req, res) => {
+app.get('/reviews/meta/', async (req, res) => {
   console.log(`responding to GET request on /reviews/meta/ for ${JSON.stringify(req.query)}`);
 
-  // use aggregation to pipe stages used to query and build return object
-  db.collection('characteristics')
-    .aggregate([
-      {$match: {product_id: parseInt(req.query.product_id)}},
-      {$project: {name: 1, _id: 0}},
-    ])
-    .toArray((err, characteristics) => {
-      if (err) {
-        PromiseRejectionEvent(console.log('error getting characteristics'));
-        res.status(404).send('error getting characteristics');
-      } else {
-        res.send({
-          product_id: req.query.product_id,
-          characteristics
-        });
-      }
+  // ensure product_id query value is passed in
+  if (req.query.product_id === undefined) {
+    res.status(404).send('Error: invalid product_id provided');
+  } else {
+    const [reviews, chars] = await Promise.all(read('characteristics', req.query));
+    if (reviews.length === 0) {
+      res.status(404).send('There are no reviews for that product_id or product_id does not exist.');
+      return;
+    }
+
+    // create recommended object so each field can be incremented
+    const recommended = {'false': 0, 'true': 0}
+    // create ratings object so each field can be incremented
+    const ratings = {'1': 0, '2': 0, '3': 0, '4': 0, '5': 0};
+
+    // populate ratings object
+    reviews.forEach(item => {
+      recommended[item.recommend]++;
+      ratings[item.rating]++;
     });
 
+    // create and populate characteristics object
+    let characteristics = {};
+    chars.forEach(item => {
+      characteristics[item.name] = {
+        id: item.value[0].characteristic_id,
+        value: String((item.value
+          .reduce((prev, current) => prev + current.value, 0) / item.value.length)
+          .toFixed(4))
+      };
+    });
+
+    res.send({
+      product_id: req.query.product_id,
+      ratings,
+      recommended,
+      characteristics,
+    });
+  }
 })
 
 app.post('/reviews/', (req, res) => {
-  res.send();
+  console.log('responding to POST request on /reviews/');
+
+  // need to use product_id to insert into reviews
+  // into reviews will need to generate a unique id and a date
+  /**
+   * The reponse object will come in with the following structure:
+   * {
+   *   product_id: integer,
+   *   rating: int,
+   *   summary: text,
+   *   body: text,
+   *   recommend: bool,
+   *   name: text,
+   *   email: text,
+   *   photos: [text],
+   *   characteristics: {
+   *     characteristics_id: int,
+   *     characteristics_id: int
+   *   }
+   * }
+   */
+  // const [lastReviewId] = await Promise.all([
+    // read('reviewId', {product_id: req.body.product_id}),
+    // read('lastReviewId',{})
+  // ])
+
+  // **********************************************************************************************
+  // **********************************************************************************************
+  // TODO - somehwere I should validate that the characteristics do correspond to the product_id
+  // **********************************************************************************************
+  // **********************************************************************************************
+  Promise.all([read('lastReviewId'),read('lastCharacteristicReviewId'), read('lastPhotoId')])
+  .then(([lastReviewId, lastCharacteristicId, lastPhotoId]) => {
+      const { review_id } = lastReviewId;
+      const { _id } = lastCharacteristicId;
+      const { id } = lastPhotoId;
+
+      let review = {
+        review_id: review_id + 1,
+        product_id: req.body.product_id,
+        rating: req.body.rating,
+        date: new Date(),
+        summary: req.body.summary,
+        body: req.body.body,
+        recommend: req.body.recommend,
+        reported: false,
+        reviewer_name: req.body.name,
+        reviewer_email: req.body.email,
+        response: req.body.response ? req.body.response : 'null',
+        helpfulness: 0
+      }
+
+      Promise.all(
+        [create('review', [review])]
+          .concat(
+            create('characteristicreview',
+              Object.keys(req.body.characteristics)
+                .map((item, index) => ({
+                    _id: _id + 1 + index,
+                    characteristic_id: Number(item),
+                    review_id: review_id + 1,
+                    value: req.body.characteristics[item]
+                  })
+                )
+              ),
+            create('reviewphotos',
+              req.body.photos.slice(0, 5)
+                .map((photo, i) => ({
+                  id: id + 1 + i,
+                  review_id: review_id + 1,
+                  url: photo
+                })
+              )
+            )
+          )
+        )
+        .then(response => {
+          console.log(response);
+          res.status(201).send();
+        })
+        .catch(err => {
+          console.log(err);
+          res.status(500).send(err);
+        })
+    })
+    .catch(err => {
+      console.log(err);
+      res.status(500).send(err);
+    })
+
 });
 
 let port = (process.env.PORT || 8080);
