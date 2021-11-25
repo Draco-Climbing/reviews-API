@@ -1,5 +1,6 @@
 import {expect, assert} from 'chai';
 import axios from 'axios';
+
 describe('REST API tests', () => {
   describe('Express server GET request for /reviews/ route tests', () => {
     it('should answer GET requests for /reviews/ with correct data types', async () => {
@@ -71,7 +72,7 @@ describe('REST API tests', () => {
   });
   describe('Express server GET request for /reviews/meta route tests', () => {
     it('should answer GET requests for /reviews/meta/ with correct data types', async () => {
-      const productId = `${Math.floor(Math.random() * 1000000)}`;
+      const productId = `${Math.floor(Math.random() * 100000)}`;
       const response = await axios.get(`http://localhost:8080/reviews/meta/?product_id=${productId}`);
 
       expect(response.status).to.equal(200);
@@ -97,11 +98,18 @@ describe('REST API tests', () => {
         expect(item.value).to.be.a('string');
       });
     });
+    it('GET request should should return 404 error if product_id does not exist', async () => {
+      const productId = 123123124134234243;
+      await axios.get(`http://localhost:8080/reviews/meta/?product_id=${productId}`)
+        .catch(err => {
+          expect(String(err)).to.have.string('404');
+        })
+    });
   });
   describe('Express server POST request for /reviews/ route tests', () => {
     it('fields inserted should be found on the database', async () => {
       const postObj = {
-        product_id: '100',
+        product_id: 100,
         rating: 2,
         summary: 'This is a test',
         body: 'This is just a test post to see if the route is working',
@@ -130,7 +138,7 @@ describe('REST API tests', () => {
       const reviewResponse = await axios.get(reviewGETURL);
 
       expect(reviewResponse.status).to.equal(200);
-      expect(reviewResponse.data.product_id).to.equal(postObj.product_id);
+      expect(reviewResponse.data.product_id).to.equal(String(postObj.product_id));
 
       expect(reviewResponse.data.results).to.have.lengthOf(5);
       expect(reviewResponse.data.results[0].rating).to.equal(postObj.rating);
@@ -146,6 +154,107 @@ describe('REST API tests', () => {
       // since the photos are being written/read asynchronously just check that the string up to the number matches
       expect(reviewResponse.data.results[0].photos[0].url.slice(0, -1)).to.equal(postObj.photos[0].slice(0, -1));
     });
+    it('post should should return 500 error if characteristics do not correspond to product_id', async () => {
+      const postObj = {
+        product_id: 100,
+        rating: 2,
+        summary: 'This is a test',
+        body: 'This is just a test post to see if the route is working',
+        recommend: true,
+        name: 'mike tester',
+        email: 'mike@check.test',
+        photos: [
+          'mic.check/1',
+          'mic.check/2',
+          'mic.check/3',
+          'mic.check/4',
+          'mic.check/5',
+          'mic.check/6'
+        ],
+        characteristics: {
+          '3444': 3
+        }
+      };
+
+      await axios.post('http://localhost:8080/reviews/', postObj)
+        .catch(err => {
+          expect(String(err)).to.have.string('500');
+        })
+    });
   })
+  describe('Express server PUT request for report and helpful endpoints', () => {
+    it('should increase the helpful parameter for a review', async () => {
+      const postObj = {
+        product_id: 100,
+        rating: 2,
+        summary: 'This is a test',
+        body: 'This is just a test post to see if the route is working',
+        recommend: true,
+        name: 'mike tester',
+        email: 'mike@check.test',
+        photos: [
+          'mic.check/1',
+          'mic.check/2',
+          'mic.check/3',
+          'mic.check/4',
+          'mic.check/5',
+          'mic.check/6'
+        ],
+        characteristics: {
+          '343': 5
+        }
+      };
+
+      const getURL = `http://localhost:8080/reviews/?product_id=${postObj.product_id}&sort=newest&count=1`;
+
+      // add a review
+      await axios.post('http://localhost:8080/reviews/', postObj)
+      // get latest review
+      const before = await axios.get(getURL);
+      // mark review as helpful
+      await axios.put(`http://localhost:8080/reviews/${before.data.results[0].review_id}/helpful`)
+      // get latest review again
+      const after = await axios.get(getURL);
+
+      // ensure latest review helpfulness value is updated
+      expect(before.data.results[0].helpfulness + 1).to.equal(after.data.results[0].helpfulness);
+    });
+    it('should change the reported parameter for a review', async () => {
+      const postObj = {
+        product_id: 100,
+        rating: 2,
+        summary: 'This is a test',
+        body: 'This is just a test post to see if the route is working',
+        recommend: true,
+        name: 'mike tester',
+        email: 'mike@check.test',
+        photos: [
+          'mic.check/1',
+          'mic.check/2',
+          'mic.check/3',
+          'mic.check/4',
+          'mic.check/5',
+          'mic.check/6'
+        ],
+        characteristics: {
+          '343': 5
+        }
+      };
+
+      const getURL = `http://localhost:8080/reviews/?product_id=${postObj.product_id}&sort=newest&count=1`;
+
+      // add a review
+      await axios.post('http://localhost:8080/reviews/', postObj)
+      // get latest review
+      const before = await axios.get(getURL);
+      // mark review as helpful
+      await axios.put(`http://localhost:8080/reviews/${before.data.results[0].review_id}/report`)
+      // get latest review again
+      const after = await axios.get(getURL);
+
+      // ensure latest doesn't show up in results since it is reported
+      expect(before.data.results[0].review_id).to.not.equal(after.data.results[0].review_id);
+    });
+  });
 })
 

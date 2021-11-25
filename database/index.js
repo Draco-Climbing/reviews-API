@@ -92,7 +92,7 @@ const characteristicReviewsSchema = new Schema({
 
 const characteristicsSchema = new Schema({
   _id: Number,
-  product_id: Number,
+  product_id: String,
   name: String,
 }, {versionKey: false});
 
@@ -171,6 +171,17 @@ export function read(type, query = {}) {
         {$project: {_id: 0, product_id: 0}}
       ])
     ];
+  } else if (type === 'verifyCharacteristics') {
+    // only get the characteristic ids that correspond to the product_id
+    return characteristics
+      .aggregate([
+        {$match: query},
+        {$group: {
+          _id: '_id',
+          values: {$push: '$_id'}
+        }},
+        {$project: {values: 1, _id: 0}},
+      ])
   } else if (type === 'lastReviewId') {
     return reviews.findOne({})
       .sort({review_id: -1}) // need to get the last review_id
@@ -196,7 +207,7 @@ export function create(type, document) {
         console.log(err);
         return handleError(err);
       } else {
-        console.log(result);
+        // console.log(result);
         return result;
       }
     });
@@ -206,7 +217,7 @@ export function create(type, document) {
         console.log(err);
         return handleError(err);
       } else {
-        console.log(result);
+        // console.log(result);
         return result;
       }
     });
@@ -216,7 +227,7 @@ export function create(type, document) {
         console.log(err);
         return handleError(err);
       } else {
-        console.log(result);
+        // console.log(result);
         return result;
       }
     });

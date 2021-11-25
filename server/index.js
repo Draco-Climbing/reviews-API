@@ -1,4 +1,3 @@
-import axios from 'axios';
 import express, { response } from 'express'
 import db, {read, create, update} from '../database/index.js'
 
@@ -33,8 +32,8 @@ app.get('/reviews/', (req, res) => {
         if (results.length === 0) {
           res.status(404).send('There are no reviews for that product_id or product_id does not exist.');
         }
+        // results[response] = results[response] === 'null' ? null : results[response];
         console.log(results);
-        results[response] = results[response] === 'null' ? null : results[response];
 
         console.log('finished searching');
         res.send({
@@ -132,64 +131,82 @@ app.post('/reviews/', (req, res) => {
   // TODO - somehwere I should validate that the characteristics do correspond to the product_id
   // **********************************************************************************************
   // **********************************************************************************************
-  Promise.all([read('lastReviewId'),read('lastCharacteristicReviewId'), read('lastPhotoId')])
-  .then(([lastReviewId, lastCharacteristicId, lastPhotoId]) => {
-      const { review_id } = lastReviewId;
-      const { _id } = lastCharacteristicId;
-      const { id } = lastPhotoId;
+  read('verifyCharacteristics', { product_id: String(req.body.product_id) })
+    // can deconstruct the object values in an array into the values variable
+    .then(([{values}]) => {
+      // check that the characteristic id being sent with the review corresponds
+      // to the values for that product id
+      Object.keys(req.body.characteristics).forEach(item => {
+        if (!values.includes(Number(item))) {
+          throw Error('error writting to database, check that all parameters are correct')
+        }
+      });
+    })
+    .then(() => {
+      Promise.all([read('lastReviewId'),read('lastCharacteristicReviewId'), read('lastPhotoId')])
+      .then(([lastReviewId, lastCharacteristicId, lastPhotoId]) => {
+          const { review_id } = lastReviewId;
+          const { _id } = lastCharacteristicId;
+          const { id } = lastPhotoId;
 
-      let review = {
-        review_id: review_id + 1,
-        product_id: req.body.product_id,
-        rating: req.body.rating,
-        date: new Date(),
-        summary: req.body.summary,
-        body: req.body.body,
-        recommend: req.body.recommend,
-        reported: false,
-        reviewer_name: req.body.name,
-        reviewer_email: req.body.email,
-        response: req.body.response ? req.body.response : 'null',
-        helpfulness: 0
-      }
+          // need to create review object
+          // that will become the document written into reviews collection
+          let review = {
+            review_id: review_id + 1,
+            product_id: String(req.body.product_id),
+            rating: req.body.rating,
+            date: new Date(),
+            summary: req.body.summary,
+            body: req.body.body,
+            recommend: req.body.recommend,
+            reported: false,
+            reviewer_name: req.body.name,
+            reviewer_email: req.body.email,
+            response: req.body.response ? req.body.response : 'null',
+            helpfulness: 0
+          }
 
-      Promise.all(
-        [create('review', [review])]
-          .concat(
-            create('characteristicreview',
-              Object.keys(req.body.characteristics)
-                .map((item, index) => ({
-                    _id: _id + 1 + index,
-                    characteristic_id: Number(item),
-                    review_id: review_id + 1,
-                    value: req.body.characteristics[item]
-                  })
+          Promise.all(
+            [create('review', [review])]
+              .concat(
+                create('characteristicreview',
+                  Object.keys(req.body.characteristics)
+                    .map((item, index) => ({
+                        _id: _id + 1 + index,
+                        characteristic_id: Number(item),
+                        review_id: review_id + 1,
+                        value: req.body.characteristics[item]
+                      }))
+                ),
+                create('reviewphotos',
+                  req.body.photos.slice(0, 5)
+                    .map((photo, i) => ({
+                      id: id + 1 + i,
+                      review_id: review_id + 1,
+                      url: photo
+                    }))
                 )
-              ),
-            create('reviewphotos',
-              req.body.photos.slice(0, 5)
-                .map((photo, i) => ({
-                  id: id + 1 + i,
-                  review_id: review_id + 1,
-                  url: photo
-                })
               )
             )
-          )
-        )
-        .then(response => {
-          console.log(response);
-          res.status(201).send('review was created successfully');
+            .then(() => {
+              console.log('documents were created and added to collection successfully');
+              res.status(201).send('review was created successfully');
+            })
+            .catch(err => {
+              console.log(err);
+              res.status(500).send(err);
+            })
         })
         .catch(err => {
           console.log(err);
           res.status(500).send(err);
-        })
+        });
     })
     .catch(err => {
       console.log(err);
       res.status(500).send(err);
-    })
+    });
+
 });
 
 app.put('/reviews/:review_id/helpful', (req, res) => {
