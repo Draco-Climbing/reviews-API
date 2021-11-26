@@ -1,5 +1,5 @@
 import express, { response } from 'express'
-import db, {read, create, update} from '../database/index.js'
+import {read, create, update} from '../database/index.js'
 
 let app = express();
 
@@ -16,39 +16,42 @@ app.get('/reviews/', (req, res) => {
   if (req.query.product_id === undefined) {
     res.status(404).send('Error: invalid product_id provided');
     return;
-  } else {
-    // read will already incorporate the sort and limit numbers
-    read('reviews', {
-      // set product_id to be an int instead of a string
-      product_id: req.query.product_id,
-      // read properties from req.query or set to defaults
-      count: (parseInt(req.query.count, 10) || 5),
-      // page will determine which result of count will be returned
-      // so page 2 with count 5 will return the second set of 5 results
-      page: (parseInt(req.query.page, 10) || 1),
-      sort: (req.query.sort || 'newest'),
-    })
-      .then((results) => {
-        if (results.length === 0) {
-          res.status(404).send('There are no reviews for that product_id or product_id does not exist.');
-        }
-        // results[response] = results[response] === 'null' ? null : results[response];
-        console.log(results);
-
-        console.log('finished searching');
-        res.send({
-          product_id: req.query.product_id,
-          page: (parseInt(req.query.page, 10) || 1),
-          count: (parseInt(req.query.count, 10) || 5),
-          results,
-        });
-      })
-      .catch(err => {
-        console.log(err);
-        res.status(500).send(err);
-      });
-
   }
+
+  // read will already incorporate the sort and limit numbers
+  read('reviews', {
+    // set product_id to be an int instead of a string
+    product_id: req.query.product_id,
+    // read properties from req.query or set to defaults
+    count: (parseInt(req.query.count, 10) || 5),
+    // page will determine which result of count will be returned
+    // so page 2 with count 5 will return the second set of 5 results
+    page: (parseInt(req.query.page, 10) || 1),
+    sort: (req.query.sort || 'newest'),
+  })
+    .then((results) => {
+      if (results.length === 0) {
+        console.log(results);
+        res.status(404).send('There are no reviews for that product_id or product_id does not exist.');
+        return;
+      }
+      // results[response] = results[response] === 'null' ? null : results[response];
+      // console.log(results);
+
+      console.log('finished searching');
+      res.send({
+        product_id: req.query.product_id,
+        page: (parseInt(req.query.page, 10) || 1),
+        count: (parseInt(req.query.count, 10) || 5),
+        results,
+      });
+      return;
+    })
+    .catch(err => {
+      console.log(err);
+      res.status(500).send(err);
+      return;
+    });
 })
 
 /*

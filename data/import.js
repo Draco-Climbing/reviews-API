@@ -1,5 +1,6 @@
 import { exec } from 'child_process';
-let command;
+
+const db = 'sdc';
 
 const files = ['reviews', 'characteristics', 'characteristic_reviews', 'reviews_photos'];
 const collections = ['reviews', 'characteristics', 'characteristicreviews', 'reviewsphotos'];
@@ -7,7 +8,7 @@ const collections = ['reviews', 'characteristics', 'characteristicreviews', 'rev
 console.log('starting execution');
 
 files.forEach((item, index) => {
-  command = `mongoimport -d sdc -c ${collections[index]} --headerline --columnsHaveTypes --type="csv" ${item}.csv`;
+  let command = `mongoimport -d ${db} -c ${collections[index]} --headerline --columnsHaveTypes --type="csv" ${item}.csv`;
 
   exec(command, (err, stdout, stderr) => {
     if (err) {

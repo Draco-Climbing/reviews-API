@@ -125,7 +125,8 @@ export function read(type, query = {}) {
     }
 
     // search for reviews with specific product id that have not been reported
-    return reviews.find({ 'product_id': query.product_id, 'reported': false })
+    return reviews
+      .find({ 'product_id': query.product_id, 'reported': false })
       .sort(sortObject)
       .skip(query.count * (query.page - 1))
       .limit(query.count)
