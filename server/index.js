@@ -30,11 +30,6 @@ app.get('/reviews/', (req, res) => {
     sort: (req.query.sort || 'newest'),
   })
     .then((results) => {
-      if (results.length === 0) {
-        console.log(results);
-        res.status(404).send('There are no reviews for that product_id or product_id does not exist.');
-        return;
-      }
       // results[response] = results[response] === 'null' ? null : results[response];
       // console.log(results);
 
@@ -71,32 +66,21 @@ app.get('/reviews/meta/', async (req, res) => {
       return;
     }
 
-    // create recommended object so each field can be incremented
-    const recommended = {'false': 0, 'true': 0}
-    // create ratings object so each field can be incremented
-    const ratings = {'1': 0, '2': 0, '3': 0, '4': 0, '5': 0};
-
-    // populate ratings object
-    reviews.forEach(item => {
-      recommended[item.recommend]++;
-      ratings[item.rating]++;
-    });
+    console.log(chars);
 
     // create and populate characteristics object
     let characteristics = {};
     chars.forEach(item => {
       characteristics[item.name] = {
-        id: item.value[0].characteristic_id,
-        value: String((item.value
-          .reduce((prev, current) => prev + current.value, 0) / item.value.length)
-          .toFixed(4))
+        id: item.id,
+        value: item.value
       };
     });
 
     res.send({
       product_id: req.query.product_id,
-      ratings,
-      recommended,
+      ratings: reviews[0].ratings,
+      recommended: reviews[0].recommended,
       characteristics,
     });
   }

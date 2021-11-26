@@ -126,6 +126,7 @@ export function read(type, query = {}) {
 
     // search for reviews with specific product id that have not been reported
     return reviews
+      // This is the mongoose way to return the nested result object
       .find({ 'product_id': query.product_id, 'reported': false })
       .sort(sortObject)
       .skip(query.count * (query.page - 1))
@@ -146,20 +147,71 @@ export function read(type, query = {}) {
         'photos': 1
       })
       .exec();
+
+      // // this is the mongo aggragate pipeline way to do the same as the way shown above.
+      // .aggregate([
+      //   {$match: {product_id: query.product_id, reported: false}},
+      //   {$sort: sortObject},
+      //   {$skip: (query.count * (query.page - 1))},
+      //   {$limit: query.count},
+      //   {$lookup: {
+      //     from: 'reviewsphotos',
+      //     localField: 'review_id',
+      //     foreignField: 'review_id',
+      //     as: 'photos',
+      //     pipeline: [{$project: {_id: 0, review_id: 0}}]
+      //   }},
+      //   {$project: {
+      //       '_id': 0,
+      //       'review_id': 1,
+      //       'rating': 1,
+      //       'summary': 1,
+      //       'recommend': 1,
+      //       'response': 1,
+      //       'body': 1,
+      //       'date': 1,
+      //       'reviewer_name': 1,
+      //       'helpfulness': 1,
+      //       'photos': 1
+      //     }},
+      // ])
   } else if (type === 'characteristics') {
     return [
       reviews.aggregate([
         {$match: { product_id: query.product_id}},
-        {$project: {_id: 0, recommend: 1, rating: 1}},
-        // //  trying to make two buckets where things are grouped by rating and by recommend
-        // {$bucket: {
-        //   groupBy: '$rating',
-        //   boundaries: [0, 2, 3, 4, 6],
-        //   default: 'no_rating',
-        //   output: {
-        //     rating_count: {$sum: 1},
-        //   }
-        // }}
+        // run two facets/queries
+        {$facet: {
+          // create ratings object
+          "ratings": [
+            // in ratings pipeline group items
+            {$group: {
+              // group by product id
+              _id: '$product_id',
+              // and conditionals where rating must equal specific value
+              1: {$sum: {$cond: [{$eq: ['$rating', 1]}, 1, 0]}},
+              2: {$sum: {$cond: [{$eq: ['$rating', 2]}, 1, 0]}},
+              3: {$sum: {$cond: [{$eq: ['$rating', 3]}, 1, 0]}},
+              4: {$sum: {$cond: [{$eq: ['$rating', 4]}, 1, 0]}},
+              5: {$sum: {$cond: [{$eq: ['$rating', 5]}, 1, 0]}},
+            }},
+            // don't show _id
+            {$project: {_id: 0, }}
+          ],
+          "recommended": [
+            {$group: {
+              _id: '$product_id',
+              // group by true or false conditions of recommend
+              true: {$sum: {$cond: ['$recommend', 1, 0]}},
+              false: {$sum: {$cond: ['$recommend', 0, 1]}}
+            }},
+            {$project: {_id: 0}}
+          ]
+        }},
+        // show the first result from each array which is just the result object
+        {$project: {
+          ratings: {$first: '$ratings'},
+          recommended: {$first: '$recommended'}
+        }}
       ]),
       characteristics.aggregate([
         {$match: { product_id: query.product_id}},
@@ -168,8 +220,17 @@ export function read(type, query = {}) {
           localField: '_id',
           foreignField: 'characteristic_id',
           as: 'value',
+          pipeline: [
+            // group by characteristic_id and calculate average review values
+            {$group: {_id: '$characteristic_id', value: {$avg: '$value'}}},
+            // round review values
+            {$project: {_id: 0, value: {$round: ['$value', 4]}}}
+          ]
         }},
-        {$project: {_id: 0, product_id: 0}}
+        // unwind array of value that comes in from nested pipeline above
+        {$unwind: '$value'},
+        // show the nested value object's value as a string and show _id (characteristic id) as id
+        {$project: {_id: 0, id: '$_id', name: 1, value: {$toString: '$value.value'}}}
       ])
     ];
   } else if (type === 'verifyCharacteristics') {
