@@ -1,7 +1,9 @@
-import express, { response } from 'express'
-import {read, create, update} from '../database/index.js'
+/* eslint-disable import/extensions */
+/* eslint-disable camelcase */
+import express from 'express';
+import { read, create, update } from '../database/index.js';
 
-let app = express();
+const app = express();
 
 app.use(express.json());
 
@@ -40,14 +42,12 @@ app.get('/reviews/', (req, res) => {
         count: (parseInt(req.query.count, 10) || 5),
         results,
       });
-      return;
     })
-    .catch(err => {
+    .catch((err) => {
       console.log(err);
       res.status(500).send(err);
-      return;
     });
-})
+});
 
 /*
  The /reviews/meta/ route will be using the aggregation pipeline to query, sort, and build
@@ -69,11 +69,11 @@ app.get('/reviews/meta/', async (req, res) => {
     console.log(chars);
 
     // create and populate characteristics object
-    let characteristics = {};
-    chars.forEach(item => {
+    const characteristics = {};
+    chars.forEach((item) => {
       characteristics[item.name] = {
         id: item.id,
-        value: item.value
+        value: item.value,
       };
     });
 
@@ -84,7 +84,7 @@ app.get('/reviews/meta/', async (req, res) => {
       characteristics,
     });
   }
-})
+});
 
 app.post('/reviews/', (req, res) => {
   console.log('responding to POST request on /reviews/');
@@ -109,8 +109,8 @@ app.post('/reviews/', (req, res) => {
    * }
    */
   // const [lastReviewId] = await Promise.all([
-    // read('reviewId', {product_id: req.body.product_id}),
-    // read('lastReviewId',{})
+  // read('reviewId', {product_id: req.body.product_id}),
+  // read('lastReviewId',{})
   // ])
 
   // **********************************************************************************************
@@ -120,25 +120,25 @@ app.post('/reviews/', (req, res) => {
   // **********************************************************************************************
   read('verifyCharacteristics', { product_id: String(req.body.product_id) })
     // can deconstruct the object values in an array into the values variable
-    .then(([{values}]) => {
+    .then(([{ values }]) => {
       // check that the characteristic id being sent with the review corresponds
       // to the values for that product id
-      Object.keys(req.body.characteristics).forEach(item => {
+      Object.keys(req.body.characteristics).forEach((item) => {
         if (!values.includes(Number(item))) {
-          throw Error('error writting to database, check that all parameters are correct')
+          throw Error('error writting to database, check that all parameters are correct');
         }
       });
     })
     .then(() => {
-      Promise.all([read('lastReviewId'),read('lastCharacteristicReviewId'), read('lastPhotoId')])
-      .then(([lastReviewId, lastCharacteristicId, lastPhotoId]) => {
+      Promise.all([read('lastReviewId'), read('lastCharacteristicReviewId'), read('lastPhotoId')])
+        .then(([lastReviewId, lastCharacteristicId, lastPhotoId]) => {
           const { review_id } = lastReviewId;
           const { _id } = lastCharacteristicId;
           const { id } = lastPhotoId;
 
           // need to create review object
           // that will become the document written into reviews collection
-          let review = {
+          const review = {
             review_id: review_id + 1,
             product_id: String(req.body.product_id),
             rating: req.body.rating,
@@ -150,50 +150,51 @@ app.post('/reviews/', (req, res) => {
             reviewer_name: req.body.name,
             reviewer_email: req.body.email,
             response: req.body.response ? req.body.response : 'null',
-            helpfulness: 0
-          }
+            helpfulness: 0,
+          };
 
           Promise.all(
             [create('review', [review])]
               .concat(
-                create('characteristicreview',
+                create(
+                  'characteristicreview',
                   Object.keys(req.body.characteristics)
                     .map((item, index) => ({
-                        _id: _id + 1 + index,
-                        characteristic_id: Number(item),
-                        review_id: review_id + 1,
-                        value: req.body.characteristics[item]
-                      }))
+                      _id: _id + 1 + index,
+                      characteristic_id: Number(item),
+                      review_id: review_id + 1,
+                      value: req.body.characteristics[item],
+                    })),
                 ),
-                create('reviewphotos',
+                create(
+                  'reviewphotos',
                   req.body.photos.slice(0, 5)
                     .map((photo, i) => ({
                       id: id + 1 + i,
                       review_id: review_id + 1,
-                      url: photo
-                    }))
-                )
-              )
-            )
+                      url: photo,
+                    })),
+                ),
+              ),
+          )
             .then(() => {
               console.log('documents were created and added to collection successfully');
               res.status(201).send('review was created successfully');
             })
-            .catch(err => {
+            .catch((err) => {
               console.log(err);
               res.status(500).send(err);
-            })
+            });
         })
-        .catch(err => {
+        .catch((err) => {
           console.log(err);
           res.status(500).send(err);
         });
     })
-    .catch(err => {
+    .catch((err) => {
       console.log(err);
       res.status(500).send(err);
     });
-
 });
 
 app.put('/reviews/:review_id/helpful', (req, res) => {
@@ -204,16 +205,16 @@ app.put('/reviews/:review_id/helpful', (req, res) => {
     update('helpful', req.params.review_id)
       .then((response) => {
         if (response.acknowledged) {
-          console.log(response)
+          console.log(response);
           res.status(204).send();
         } else {
           res.status(500).send('server error marking review as helpful');
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.error(err);
         res.status(500).send('server error marking review as helpful');
-      })
+      });
   }
 });
 
@@ -225,21 +226,21 @@ app.put('/reviews/:review_id/report', (req, res) => {
     update('report', req.params.review_id)
       .then((response) => {
         if (response.acknowledged) {
-          console.log(response)
+          console.log(response);
           res.status(204).send();
         } else {
           res.status(500).send('server error reporting review');
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.error(err);
         res.status(500).send('server error reporting review');
-      })
+      });
   }
 });
 
-let port = (process.env.PORT || 8080);
+const port = (process.env.PORT || 8080);
 
 app.listen(port, () => {
   console.log(`active on http://localhost:${port}`);
-})
+});
