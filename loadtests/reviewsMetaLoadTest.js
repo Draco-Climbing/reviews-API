@@ -1,30 +1,33 @@
+/* eslint-disable import/no-unresolved */
 import http from 'k6/http';
 import { check, group } from 'k6';
 
 export const options = {
-  vus: 10,
+  vus: 30,
   duration: '60s',
   thresholds: {
-    http_req_failed: ['rate<0.01'], // http errors should be less than 1%
+    http_req_failed: ['rate<0.005'], // http errors should be less than 0.5%
     http_req_duration: [
-      'p(95)<1000', // 90% of requests should be below 1000ms
-      'p(75)<500', // 75% of requests should be below 500ms
-      'p(50)<300', // 50% of requests should be below 300ms
-      'p(10)<200', // 10% of requests should be below 200ms
+      'p(99)<200', // 99% of requests should be below 300ms
+      'p(97)<100', // 97% of requests should be below 200ms
     ],
-  }
+  },
 };
 
 // this is my default function that will send a GET request to /reviews/ for product 100
 export default function () {
   /**
    * Running the following command:
-   * db.reviews.aggregate([{$group: {_id: "$product_id", count: {$count:{}}}},{$group:{_id: null, count: {$count:{}}}}])
+   * db.reviews.aggregate([
+   *   {$group: {_id: "$product_id", count: {$count:{}}}},
+   *   {$group:{_id: null, count: {$count:{}}}}
+   * ])
    *
    * Returns the following, which is a count of the total number of different product_ids
    * [ { _id: null, count: 950072 } ]
    *
-   * Then running the following command (looking for the first 100 items in the lowest 10% of product_ids):
+   * Then running the following command
+   * (looking for the first 100 items in the lowest 10% of product_ids):
    * db.reviews.aggregate([
    *   {$group: {_id: "$product_id"}},
    *   {$project: {_id: {$toInt: '$_id'}}},
@@ -106,8 +109,8 @@ export default function () {
     475124, 475125, 475126, 475127, 475130, 475132, 475133, 475134, 475135, 475136, 475137, 475139,
     475140, 475141, 475142, 475143, 475144, 475145];
 
-  const last = [855065, 855066, 855067, 855068, 855069, 855070, 855071, 855072, 855073, 855074, 855075,
-    855076, 855077, 855078, 855079, 855080, 855081, 855082, 855083, 855084, 855085, 855086,
+  const last = [855065, 855066, 855067, 855068, 855069, 855070, 855071, 855072, 855073, 855074,
+    855075, 855076, 855077, 855078, 855079, 855080, 855081, 855082, 855083, 855084, 855085, 855086,
     855087, 855088, 855089, 855090, 855091, 855092, 855093, 855094, 855095, 855096, 855097,
     855098, 855099, 855100, 855101, 855102, 855103, 855104, 855105, 855106, 855107, 855108,
     855109, 855110, 855111, 855112, 855113, 855114, 855115, 855116, 855117, 855119, 855120,
@@ -117,34 +120,28 @@ export default function () {
     855158, 855159, 855160, 855161, 855162, 855163, 855164, 855165, 855166, 855167, 855168,
     855169];
 
-  const productIdArray = first.concat(middle, last);
-
   const checkingObj = {
     // checking each request to ensure the status is 200
     'response has a status of 200': (r) => r.status === 200,
-    // checking each request to ensure that the response time is less than 1000ms
-    'transaction time < 1000ms': (r) => r.timings.duration < 1000,
-    // checking each request to ensure that the response time is less than 800ms
-    'transaction time < 800ms': (r) => r.timings.duration < 800,
-    // checking each request to ensure that the response time is less than 300ms
-    'transaction time < 300ms': (r) => r.timings.duration < 300,
     // checking each request to ensure that the response time is less than 200ms
     'transaction time < 200ms': (r) => r.timings.duration < 200,
+    // checking each request to ensure that the response time is less than 100ms
+    'transaction time < 100ms': (r) => r.timings.duration < 100,
   };
 
   group('GET /reviews/meta within the first 10%', () => {
-    let productId = first[Math.floor(Math.random() * first.length)];
+    const productId = first[Math.floor(Math.random() * first.length)];
     const res = http.get(`http://localhost:8080/reviews/meta/?product_id=${productId}`);
     check(res, checkingObj);
-  })
+  });
   group('GET /reviews/meta within the middle 10%', () => {
-    let productId = middle[Math.floor(Math.random() * middle.length)];
+    const productId = middle[Math.floor(Math.random() * middle.length)];
     const res = http.get(`http://localhost:8080/reviews/meta/?product_id=${productId}`);
     check(res, checkingObj);
-  })
+  });
   group('GET /reviews/meta within the last 10%', () => {
-    let productId = last[Math.floor(Math.random() * last.length)];
+    const productId = last[Math.floor(Math.random() * last.length)];
     const res = http.get(`http://localhost:8080/reviews/meta/?product_id=${productId}`);
     check(res, checkingObj);
-  })
+  });
 }

@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { exec } from 'child_process';
 
 const db = 'sdc';
@@ -8,16 +9,17 @@ const collections = ['reviews', 'characteristics', 'characteristicreviews', 'rev
 console.log('starting execution');
 
 files.forEach((item, index) => {
-  let command = `mongoimport -d ${db} -c ${collections[index]} --headerline --columnsHaveTypes --type="csv" ${item}.csv`;
+  // --drop drops the instance before importing the new one
+  const command = `mongoimport -d ${db} -c ${collections[index]} --headerline --columnsHaveTypes --drop --type="csv" ${item}.csv`;
 
   exec(command, (err, stdout, stderr) => {
     if (err) {
-      console.error(`exec error: ${error}`);
+      console.error(`exec error: ${err}`);
     } else if (stderr) {
       console.error(`stderr: ${stderr}`);
     } else {
       console.log(`stdout: ${stdout}`);
       console.log(`${item}.csv was imported successfully`);
     }
-  })
-})
+  });
+});
