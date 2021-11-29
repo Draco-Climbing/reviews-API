@@ -1,5 +1,6 @@
+/* eslint-disable consistent-return */
 /* eslint-disable camelcase */
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const MONGODB_URI = (process.env.MONGODB_URI || 'mongodb://localhost/sdc');
 
@@ -17,11 +18,6 @@ const { Schema } = mongoose;
 // will also need to update document during PUT request to
 // /reviews/:review_id/report route and /reviews/:review_id/helpful
 const reviewsSchema = new Schema({
-  id: {
-    type: Number,
-    select: false,
-    unique: true,
-  },
   // data will come from reviews.csv
   review_id: Number,
   // data will come from reviews.csv
@@ -83,10 +79,7 @@ const reviewsphotosSchema = new Schema({
 // value will be updated in POST /reviews/ request
 const characteristicReviewsSchema = new Schema({
   // data will come from characteristics_reviews.csv and characteristics.csv
-  _id: {
-    type: Number,
-    unique: true,
-  },
+  _id: Number,
   // data will come from characteristics_reviews.csv
   review_id: Number,
   // data will come from characteristics_reviews.csv
@@ -117,10 +110,10 @@ const characteristicReviews = mongoose.model('characteristicreviews', characteri
 const characteristics = mongoose.model('characteristics', characteristicsSchema);
 
 const db = mongoose.connection;
-export default db;
+module.exports.db = db;
 
-export function read(type, query = {}) {
-  console.log(`going to read database for ${type}`);
+module.exports.read = function read(type, query) {
+  // console.log(`going to read database for ${type}`);
 
   if (type === 'reviews') {
     let sortObject;
@@ -133,56 +126,60 @@ export function read(type, query = {}) {
     }
 
     // search for reviews with specific product id that have not been reported
+    // this is the mongo aggragate pipeline way to do the same as the way shown above.
     return reviews
-      // This is the mongoose way to return the nested result object
-      .find({ product_id: query.product_id, reported: false })
-      .sort(sortObject)
-      .skip(query.count * (query.page - 1))
-      .limit(query.count)
-      .populate({ path: 'photos', select: 'url id -_id -review_id' })
-      //
-      .select({
-        _id: 0,
-        review_id: 1,
-        rating: 1,
-        summary: 1,
-        recommend: 1,
-        response: 1,
-        body: 1,
-        date: 1,
-        reviewer_name: 1,
-        helpfulness: 1,
-        photos: 1,
-      })
-      .exec();
+      .aggregate([
+        { $match: { product_id: query.product_id, reported: false } },
+        { $sort: sortObject },
+        { $skip: (query.count * (query.page - 1)) },
+        { $limit: query.count },
+        {
+          $lookup: {
+            from: 'reviewsphotos',
+            localField: 'review_id',
+            foreignField: 'review_id',
+            as: 'photos',
+            pipeline: [{ $project: { _id: 0, review_id: 0 } }],
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            review_id: 1,
+            rating: 1,
+            summary: 1,
+            recommend: 1,
+            response: 1,
+            body: 1,
+            date: 1,
+            reviewer_name: 1,
+            helpfulness: 1,
+            photos: 1,
+          },
+        },
+      ]);
 
-    // // this is the mongo aggragate pipeline way to do the same as the way shown above.
-    // .aggregate([
-    //   {$match: {product_id: query.product_id, reported: false}},
-    //   {$sort: sortObject},
-    //   {$skip: (query.count * (query.page - 1))},
-    //   {$limit: query.count},
-    //   {$lookup: {
-    //     from: 'reviewsphotos',
-    //     localField: 'review_id',
-    //     foreignField: 'review_id',
-    //     as: 'photos',
-    //     pipeline: [{$project: {_id: 0, review_id: 0}}]
-    //   }},
-    //   {$project: {
-    //       '_id': 0,
-    //       'review_id': 1,
-    //       'rating': 1,
-    //       'summary': 1,
-    //       'recommend': 1,
-    //       'response': 1,
-    //       'body': 1,
-    //       'date': 1,
-    //       'reviewer_name': 1,
-    //       'helpfulness': 1,
-    //       'photos': 1
-    //     }},
-    // ])
+    // // This is the mongoose way to return the nested result object
+    // .find({ product_id: query.product_id, reported: false })
+    // .sort(sortObject)
+    // .skip(query.count * (query.page - 1))
+    // .limit(query.count)
+    // .populate({ path: 'photos', select: 'url id -_id -review_id' })
+    // //
+    // .select({
+    //   _id: 0,
+    //   review_id: 1,
+    //   rating: 1,
+    //   summary: 1,
+    //   recommend: 1,
+    //   response: 1,
+    //   body: 1,
+    //   date: 1,
+    //   reviewer_name: 1,
+    //   helpfulness: 1,
+    //   photos: 1,
+    // })
+    // .exec();
   } if (type === 'characteristics') {
     return [
       reviews.aggregate([
@@ -268,7 +265,8 @@ export function read(type, query = {}) {
         },
         { $project: { values: 1, _id: 0 } },
       ]);
-  } if (type === 'lastReviewId') {
+  }
+  if (type === 'lastReviewId') {
     return reviews.findOne({})
       .sort({ review_id: -1 }) // need to get the last review_id
       .select({ _id: 0, review_id: 1 })
@@ -284,9 +282,9 @@ export function read(type, query = {}) {
       .select({ _id: 0, id: 1 })
       .exec();
   }
-}
+};
 
-export function create(type, document) {
+module.exports.create = function create(type, document) {
   if (type === 'review') {
     return reviews.create(document, null, (err, result) => {
       if (err) {
@@ -315,9 +313,9 @@ export function create(type, document) {
       return result;
     });
   }
-}
+};
 
-export function update(type, review_id) {
+module.exports.update = function update(type, review_id) {
   if (type === 'helpful') {
     return reviews.updateOne({ review_id }, {
       $inc: { helpfulness: 1 },
@@ -327,4 +325,4 @@ export function update(type, review_id) {
       $set: { reported: true },
     }).exec();
   }
-}
+};

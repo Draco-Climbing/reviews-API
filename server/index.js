@@ -1,7 +1,7 @@
 /* eslint-disable import/extensions */
 /* eslint-disable camelcase */
-import express from 'express';
-import { read, create, update } from '../database/index.js';
+const express = require('express');
+const { read, create, update } = require('../database/index.js');
 
 const app = express();
 
@@ -35,7 +35,7 @@ app.get('/reviews/', (req, res) => {
       // results[response] = results[response] === 'null' ? null : results[response];
       // console.log(results);
 
-      console.log('finished searching');
+      // console.log('finished searching');
       res.send({
         product_id: req.query.product_id,
         page: (parseInt(req.query.page, 10) || 1),
@@ -44,7 +44,7 @@ app.get('/reviews/', (req, res) => {
       });
     })
     .catch((err) => {
-      console.log(err);
+      // console.log(err);
       res.status(500).send(err);
     });
 });
@@ -113,11 +113,6 @@ app.post('/reviews/', (req, res) => {
   // read('lastReviewId',{})
   // ])
 
-  // **********************************************************************************************
-  // **********************************************************************************************
-  // TODO - somehwere I should validate that the characteristics do correspond to the product_id
-  // **********************************************************************************************
-  // **********************************************************************************************
   read('verifyCharacteristics', { product_id: String(req.body.product_id) })
     // can deconstruct the object values in an array into the values variable
     .then(([{ values }]) => {
@@ -201,7 +196,7 @@ app.put('/reviews/:review_id/helpful', (req, res) => {
   if (!req.params.review_id) {
     res.status(404).send('Error: invalid review_id provided');
   } else {
-    console.log(req.params);
+    // console.log(req.params);
     update('helpful', req.params.review_id)
       .then((response) => {
         if (response.acknowledged) {
@@ -222,7 +217,7 @@ app.put('/reviews/:review_id/report', (req, res) => {
   if (!req.params.review_id) {
     res.status(404).send('Error: invalid review_id provided');
   } else {
-    console.log(req.params);
+    // console.log(req.params);
     update('report', req.params.review_id)
       .then((response) => {
         if (response.acknowledged) {

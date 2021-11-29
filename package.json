@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "reviews API",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "test": "mocha -R nyan",
-    "load": "for FILE in ./loadtests/*; do k6 run $FILE; done",
+    "loadtest": "for FILE in ./loadtests/*; do k6 run $FILE; done",
+    "import": "node ./data/import.js",
     "start": "nodemon ./server/index.js"
   },
   "repository": {
