@@ -1,5 +1,5 @@
-import {expect, assert} from 'chai';
-import axios from 'axios';
+const { expect, assert } = require('chai');
+const axios = require('axios');
 
 describe('REST API tests', () => {
   describe('Express server GET request for /reviews/ route tests', () => {
@@ -45,10 +45,10 @@ describe('REST API tests', () => {
 
       // get helpful values into an array and ensure that the length is greater than 1
       // so that deep equality assertion makes sense
-      let helpful = response.data.results.map(item => item.helpfulness);
+      const helpful = response.data.results.map((item) => item.helpfulness);
       expect(helpful).to.have.lengthOf.above(1);
 
-      assert.deepEqual(helpful.sort((a, b) => (b - a)),helpful);
+      assert.deepEqual(helpful.sort((a, b) => (b - a)), helpful);
     });
     it('should answer GET requests for /reviews/ with right count and page parameters', async () => {
       const productId = 100; // product 100 has >5 results for reviews
@@ -82,7 +82,7 @@ describe('REST API tests', () => {
 
       expect(Object.keys(response.data.ratings)).to.have.lengthOf(5);
 
-      Object.values(response.data.ratings).forEach(item => {
+      Object.values(response.data.ratings).forEach((item) => {
         expect(item).to.be.a('number');
       });
 
@@ -92,7 +92,7 @@ describe('REST API tests', () => {
 
       expect(response.data.characteristics).to.be.a('object');
 
-      Object.values(response.data.characteristics).forEach(item => {
+      Object.values(response.data.characteristics).forEach((item) => {
         expect(item).to.be.a('object');
         expect(item.id).to.be.a('number');
         expect(item.value).to.be.a('string');
@@ -101,9 +101,9 @@ describe('REST API tests', () => {
     it('GET request should should return 404 error if product_id does not exist', async () => {
       const productId = 123123124134234243;
       await axios.get(`http://localhost:8080/reviews/meta/?product_id=${productId}`)
-        .catch(err => {
+        .catch((err) => {
           expect(String(err)).to.have.string('404');
-        })
+        });
     });
   });
   describe('Express server POST request for /reviews/ route tests', () => {
@@ -122,11 +122,11 @@ describe('REST API tests', () => {
           'mic.check/3',
           'mic.check/4',
           'mic.check/5',
-          'mic.check/6'
+          'mic.check/6',
         ],
         characteristics: {
-          '343': 3
-        }
+          343: 3,
+        },
       };
 
       const postResponse = await axios.post('http://localhost:8080/reviews/', postObj);
@@ -169,19 +169,19 @@ describe('REST API tests', () => {
           'mic.check/3',
           'mic.check/4',
           'mic.check/5',
-          'mic.check/6'
+          'mic.check/6',
         ],
         characteristics: {
-          '3444': 3
-        }
+          3444: 3,
+        },
       };
 
       await axios.post('http://localhost:8080/reviews/', postObj)
-        .catch(err => {
+        .catch((err) => {
           expect(String(err)).to.have.string('500');
-        })
+        });
     });
-  })
+  });
   describe('Express server PUT request for report and helpful endpoints', () => {
     it('should increase the helpful parameter for a review', async () => {
       const postObj = {
@@ -198,21 +198,21 @@ describe('REST API tests', () => {
           'mic.check/3',
           'mic.check/4',
           'mic.check/5',
-          'mic.check/6'
+          'mic.check/6',
         ],
         characteristics: {
-          '343': 5
-        }
+          343: 5,
+        },
       };
 
       const getURL = `http://localhost:8080/reviews/?product_id=${postObj.product_id}&sort=newest&count=1`;
 
       // add a review
-      await axios.post('http://localhost:8080/reviews/', postObj)
+      await axios.post('http://localhost:8080/reviews/', postObj);
       // get latest review
       const before = await axios.get(getURL);
       // mark review as helpful
-      await axios.put(`http://localhost:8080/reviews/${before.data.results[0].review_id}/helpful`)
+      await axios.put(`http://localhost:8080/reviews/${before.data.results[0].review_id}/helpful`);
       // get latest review again
       const after = await axios.get(getURL);
 
@@ -234,21 +234,21 @@ describe('REST API tests', () => {
           'mic.check/3',
           'mic.check/4',
           'mic.check/5',
-          'mic.check/6'
+          'mic.check/6',
         ],
         characteristics: {
-          '343': 5
-        }
+          343: 5,
+        },
       };
 
       const getURL = `http://localhost:8080/reviews/?product_id=${postObj.product_id}&sort=newest&count=1`;
 
       // add a review
-      await axios.post('http://localhost:8080/reviews/', postObj)
+      await axios.post('http://localhost:8080/reviews/', postObj);
       // get latest review
       const before = await axios.get(getURL);
       // mark review as helpful
-      await axios.put(`http://localhost:8080/reviews/${before.data.results[0].review_id}/report`)
+      await axios.put(`http://localhost:8080/reviews/${before.data.results[0].review_id}/report`);
       // get latest review again
       const after = await axios.get(getURL);
 
@@ -256,5 +256,4 @@ describe('REST API tests', () => {
       expect(before.data.results[0].review_id).to.not.equal(after.data.results[0].review_id);
     });
   });
-})
-
+});
