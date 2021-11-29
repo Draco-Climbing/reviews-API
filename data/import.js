@@ -10,7 +10,7 @@ console.log('starting execution');
 
 files.forEach((item, index) => {
   // --drop drops the instance before importing the new one
-  const command = `mongoimport -d ${db} -c ${collections[index]} --headerline --columnsHaveTypes --drop --type="csv" ${item}.csv`;
+  const command = `mongoimport -d ${db} -c ${collections[index]} --headerline --columnsHaveTypes --drop --type="csv" ./data/${item}.csv`;
 
   exec(command, (err, stdout, stderr) => {
     if (err) {
