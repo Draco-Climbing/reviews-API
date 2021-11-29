@@ -4,12 +4,13 @@ import { check, group } from 'k6';
 
 export const options = {
   vus: 10,
-  duration: '60s',
+  duration: '30s',
   thresholds: {
     http_req_failed: ['rate<0.005'], // http errors should be less than 0.5%
     http_req_duration: [
-      'p(99)<300', // 99% of requests should be below 300ms
-      'p(97)<200', // 97% of requests should be below 200ms
+      'p(99)<150', // 99% of requests should be below 150ms
+      'p(97)<100', // 97% of requests should be below 100ms
+      'p(95)<50', // 97% of requests should be below 50ms
     ],
   },
 };
@@ -123,34 +124,27 @@ export default function () {
   const checkingObj = {
     // checking each request to ensure the status is 200
     'response has a status of 200': (r) => r.status === 200,
-    // checking each request to ensure that the response time is less than 300ms
-    'transaction time < 300ms': (r) => r.timings.duration < 300,
     // checking each request to ensure that the response time is less than 200ms
     'transaction time < 200ms': (r) => r.timings.duration < 200,
+    // checking each request to ensure that the response time is less than 150ms
+    'transaction time < 150ms': (r) => r.timings.duration < 150,
+    // checking each request to ensure that the response time is less than 100ms
+    'transaction time < 100ms': (r) => r.timings.duration < 100,
   };
 
   group('GET /reviews/ within the first 10%', () => {
     const productId = first[Math.floor(Math.random() * first.length)];
     const res = http.get(`http://localhost:8080/reviews/?product_id=${productId}`);
-    // if (res.status !== 200) {
-    //   console.log(`reponse for ${productId} has a status of ${res.status}`);
-    // }
     check(res, checkingObj);
   });
   group('GET /reviews/ within the middle 10%', () => {
     const productId = middle[Math.floor(Math.random() * middle.length)];
     const res = http.get(`http://localhost:8080/reviews/?product_id=${productId}`);
-    // if (res.status !== 200) {
-    //   console.log(`reponse for ${productId} has a status of ${res.status}`);
-    // }
     check(res, checkingObj);
   });
   group('GET /reviews/ within the last 10%', () => {
     const productId = last[Math.floor(Math.random() * last.length)];
     const res = http.get(`http://localhost:8080/reviews/?product_id=${productId}`);
-    // if (res.status !== 200) {
-    //   console.log(`reponse for ${productId} has a status of ${res.status}`);
-    // }
     check(res, checkingObj);
   });
 }

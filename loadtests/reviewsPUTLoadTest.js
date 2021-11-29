@@ -8,8 +8,9 @@ export const options = {
   thresholds: {
     http_req_failed: ['rate<0.005'], // http errors should be less than 0.5%
     http_req_duration: [
-      'p(99)<150', // 99% of requests should be below 150ms
-      'p(97)<100', // 97% of requests should be below 100ms
+      'p(99.99)<200', // 99.99% of requests should be below 200ms
+      'p(99)<100', // 99% of requests should be below 100ms
+      'p(97)<50', // 97% of requests should be below 50ms
     ],
   },
 };
@@ -121,29 +122,29 @@ export default function () {
     855169];
 
   const checkingObj = {
-    // checking each request to ensure the status is 200
-    'response has a status of 200': (r) => r.status === 200,
+    // checking each request to ensure the status is 204
+    'response has a status of 204': (r) => r.status === 204,
     // checking each request to ensure that the response time is less than 200ms
     'transaction time < 200ms': (r) => r.timings.duration < 200,
-    // checking each request to ensure that the response time is less than 150ms
-    'transaction time < 150ms': (r) => r.timings.duration < 150,
     // checking each request to ensure that the response time is less than 100ms
     'transaction time < 100ms': (r) => r.timings.duration < 100,
+    // checking each request to ensure that the response time is less than 50ms
+    'transaction time < 50ms': (r) => r.timings.duration < 50,
   };
 
-  group('GET /reviews/meta within the first 10%', () => {
+  group('PUT /reviews/ within the first 10%', () => {
     const productId = first[Math.floor(Math.random() * first.length)];
-    const res = http.get(`http://localhost:8080/reviews/meta/?product_id=${productId}`);
+    const res = http.put(`http://localhost:8080/reviews/${productId}/helpful`);
     check(res, checkingObj);
   });
-  group('GET /reviews/meta within the middle 10%', () => {
+  group('PUT /reviews/ within the middle 10%', () => {
     const productId = middle[Math.floor(Math.random() * middle.length)];
-    const res = http.get(`http://localhost:8080/reviews/meta/?product_id=${productId}`);
+    const res = http.put(`http://localhost:8080/reviews/${productId}/helpful`);
     check(res, checkingObj);
   });
-  group('GET /reviews/meta within the last 10%', () => {
+  group('PUT /reviews/ within the last 10%', () => {
     const productId = last[Math.floor(Math.random() * last.length)];
-    const res = http.get(`http://localhost:8080/reviews/meta/?product_id=${productId}`);
+    const res = http.put(`http://localhost:8080/reviews/${productId}/helpful`);
     check(res, checkingObj);
   });
 }

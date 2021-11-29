@@ -4,12 +4,12 @@ import { check, group } from 'k6';
 
 export const options = {
   vus: 10,
-  duration: '60s',
+  duration: '30s',
   thresholds: {
     http_req_failed: ['rate<0.005'], // http errors should be less than 0.5%
     http_req_duration: [
-      'p(99)<300', // 99% of requests should be below 300ms
-      'p(97)<200', // 97% of requests should be below 200ms
+      'p(99)<2000', // 99% of requests should be below 2000ms
+      'p(97)<1500', // 97% of requests should be below 1500ms
     ],
   },
 };
@@ -176,10 +176,10 @@ export default function () {
   const checkingObj = {
     // checking each request to ensure the status is 201
     'response has a status of 201': (r) => r.status === 201,
-    // checking each request to ensure that the response time is less than 300ms
-    'transaction time < 300ms': (r) => r.timings.duration < 300,
-    // checking each request to ensure that the response time is less than 200ms
-    'transaction time < 200ms': (r) => r.timings.duration < 200,
+    // checking each request to ensure that the response time is less than 2000ms
+    'transaction time < 2000ms': (r) => r.timings.duration < 2000,
+    // checking each request to ensure that the response time is less than 1500ms
+    'transaction time < 1500ms': (r) => r.timings.duration < 1500,
   };
 
   const summaries = ['this stinks', 'this is eh', 'this is alright', 'this is good', 'this is great'];
