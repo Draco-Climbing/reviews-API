@@ -6,8 +6,9 @@
   "scripts": {
     "test": "mocha -R nyan",
     "loadtest": "for FILE in ./loadtests/*; do k6 run $FILE; done",
-    "import": "node ./data/import.js",
-    "start": "nodemon ./server/index.js"
+    "import": "bash ./data/import.sh",
+    "start": "node ./server/index.js",
+    "start:dev": "nodemon ./server/index.js"
   },
   "repository": {
     "type": "git",
