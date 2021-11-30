@@ -1,8 +1,7 @@
 /* eslint-disable no-console */
-/* eslint-disable import/extensions */
 /* eslint-disable camelcase */
 const express = require('express');
-const { read, create, update } = require('../database/index.js');
+const { read, create, update } = require('../database/index');
 
 const app = express();
 
@@ -13,7 +12,8 @@ app.use(express.json());
  read uses .find() and does the filtering/sorting/object creation and then returns a promise
 */
 app.get('/reviews/', (req, res) => {
-  console.log(`responding to GET request on /reviews/ for ${JSON.stringify(req.query)}`);
+  // console.log('process env is', process.env);
+  // console.log(`responding to GET request on /reviews/ for ${JSON.stringify(req.query)}`);
 
   // ensure product_id query value is passed in
   if (req.query.product_id === undefined) {
@@ -55,7 +55,7 @@ app.get('/reviews/', (req, res) => {
  the object being returned from mongoDB
 */
 app.get('/reviews/meta/', async (req, res) => {
-  console.log(`responding to GET request on /reviews/meta/ for ${JSON.stringify(req.query)}`);
+  // console.log(`responding to GET request on /reviews/meta/ for ${JSON.stringify(req.query)}`);
 
   // ensure product_id query value is passed in
   if (req.query.product_id === undefined) {
@@ -67,7 +67,7 @@ app.get('/reviews/meta/', async (req, res) => {
       return;
     }
 
-    console.log(chars);
+    // console.log(chars);
 
     // create and populate characteristics object
     const characteristics = {};
@@ -88,7 +88,7 @@ app.get('/reviews/meta/', async (req, res) => {
 });
 
 app.post('/reviews/', (req, res) => {
-  console.log('responding to POST request on /reviews/');
+  // console.log('responding to POST request on /reviews/');
 
   // need to use product_id to insert into reviews
   // into reviews will need to generate a unique id and a date
@@ -174,21 +174,21 @@ app.post('/reviews/', (req, res) => {
               ),
           )
             .then(() => {
-              console.log('documents were created and added to collection successfully');
+              // console.log('documents were created and added to collection successfully');
               res.status(201).send('review was created successfully');
             })
             .catch((err) => {
-              console.log(err);
+              console.error(err);
               res.status(500).send(err);
             });
         })
         .catch((err) => {
-          console.log(err);
+          console.error(err);
           res.status(500).send(err);
         });
     })
     .catch((err) => {
-      console.log(err);
+      console.error(err);
       res.status(500).send(err);
     });
 });
@@ -201,7 +201,7 @@ app.put('/reviews/:review_id/helpful', (req, res) => {
     update('helpful', req.params.review_id)
       .then((response) => {
         if (response.acknowledged) {
-          console.log(response);
+          // console.log(response);
           res.status(204).send();
         } else {
           res.status(500).send('server error marking review as helpful');
@@ -222,7 +222,7 @@ app.put('/reviews/:review_id/report', (req, res) => {
     update('report', req.params.review_id)
       .then((response) => {
         if (response.acknowledged) {
-          console.log(response);
+          // console.log(response);
           res.status(204).send();
         } else {
           res.status(500).send('server error reporting review');
