@@ -1,3 +1,4 @@
+/* eslint-disable func-names */
 /* eslint-disable import/no-unresolved */
 import http from 'k6/http';
 import { check, group } from 'k6';
