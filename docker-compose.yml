@@ -22,5 +22,5 @@ services:
       dockerfile: mongo.Dockerfile
     volumes:
       - reviewsData:/data/db
-  volumes:
-    reviewsData
+volumes:
+  reviewsData:
