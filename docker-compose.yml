@@ -11,12 +11,16 @@ services:
       dockerfile: node.Dockerfile
   mongo:
     image: sdc-mongo
+    restart: always
     container_name: sdc-mongo
     ports:
       - 3002:27017
     environment:
-      MONGO_CONNECTION: sdc-mongo
       MONGO_INITDB_DATABASE: sdc
     build:
       context: ./data/
       dockerfile: mongo.Dockerfile
+    volumes:
+      - reviewsData:/data/db
+  volumes:
+    reviewsData

@@ -1,6 +1,6 @@
 sudo apt-get update -y
 sudo apt-get install git -y
-sudo apt-get install docker -y
+sudo apt-get install docker.io -y
 
 git clone https://github.com/Draco-Climbing/reviews-API.git
 
