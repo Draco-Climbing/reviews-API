@@ -6,10 +6,23 @@ mongoimport -d sdc -c characteristicreviews --headerline --columnsHaveTypes --dr
 
 echo "done importing files"
 
-echo "going to set indexes"
-mongosh sdc --eval "db.reviews.createIndexes([{product_id: 1, reported: 1}, {review_id: 1}])"
-mongosh sdc --eval "db.reviewsphotos.createIndexes([{review_id: 1}, {id: -1}])"
+echo "going to set indexes one at a time"
+mongosh sdc --eval "db.reviews.createIndex({product_id: 1, reported: 1})"
+echo "###################### index created for reviews 1/2 ######################"
+mongosh sdc --eval "db.reviews.createIndex({review_id: 1})"
+echo "###################### index created for reviews 2/2 ######################"
+
+mongosh sdc --eval "db.reviewsphotos.createIndex({review_id: 1})"
+echo "###################### index created for reviewsphotos 1/2 ######################"
+mongosh sdc --eval "db.reviewsphotos.createIndex({id: -1})"
+echo "###################### index created for reviewsphotos 2/2 ######################"
+
 mongosh sdc --eval "db.characteristics.createIndexes([{product_id: 1}])"
-mongosh sdc --eval "db.characteristicreviews.createIndexes([{review_id: 1}, {characteristic_id: 1}])"
+echo "###################### index created for characteristitcs 1/1 ######################"
+
+mongosh sdc --eval "db.characteristicreviews.createIndex({review_id: 1})"
+echo "###################### index created for characteristicreviews 1/2 ######################"
+mongosh sdc --eval "db.characteristicreviews.createIndex({characteristic_id: 1})"
+echo "###################### index created for characteristicreviews 2/2 ######################"
 
 echo "done setting indexes"
