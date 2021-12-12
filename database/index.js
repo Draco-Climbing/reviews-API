@@ -8,7 +8,7 @@ const {
 
 let MONGODB_URI = 'mongodb://localhost/sdc';
 if (process.env.MONGO_DB === 'sdc' && process.env.MONGO_CONNECTION === 'sdc-mongo') {
-  MONGODB_URI = 'mongodb://sdc-mongo:27017/sdc';
+  MONGODB_URI = `mongodb://${process.env.MONGOIP}:27017/sdc`;
 }
 
 // connect to MongoDB

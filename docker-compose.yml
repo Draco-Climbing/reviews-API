@@ -2,25 +2,25 @@ services:
   node:
     image: sdc-node
     container_name: sdc-node
-    depends_on:
-      - mongo
+    # depends_on:
+    #   - mongo
     ports:
       - 3000:8080
     build:
       context: .
       dockerfile: node.Dockerfile
-  mongo:
-    image: sdc-mongo
-    restart: always
-    container_name: sdc-mongo
-    ports:
-      - 3002:27017
-    environment:
-      MONGO_INITDB_DATABASE: sdc
-    build:
-      context: ./data/
-      dockerfile: mongo.Dockerfile
-    volumes:
-      - reviewsData:/data/db
-volumes:
-  reviewsData:
+#   mongo:
+#     image: sdc-mongo
+#     restart: always
+#     container_name: sdc-mongo
+#     ports:
+#       - 3002:27017
+#     environment:
+#       MONGO_INITDB_DATABASE: sdc
+#     build:
+#       context: ./data/
+#       dockerfile: mongo.Dockerfile
+#     volumes:
+#       - reviewsData:/data/db
+# volumes:
+#   reviewsData:
