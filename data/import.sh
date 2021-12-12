@@ -1,8 +1,8 @@
 echo "going to import files"
-mongoimport -d sdc -c reviews --headerline --columnsHaveTypes --drop --type csv /seed/reviews.csv
-mongoimport -d sdc -c reviewsphotos --headerline --columnsHaveTypes --drop --type csv /seed/reviews_photos.csv
-mongoimport -d sdc -c characteristics --headerline --columnsHaveTypes --drop --type csv /seed/characteristics.csv
-mongoimport -d sdc -c characteristicreviews --headerline --columnsHaveTypes --drop --type csv /seed/characteristic_reviews.csv
+mongoimport -d sdc -c reviews --headerline --columnsHaveTypes --drop --type csv seed/reviews.csv
+mongoimport -d sdc -c reviewsphotos --headerline --columnsHaveTypes --drop --type csv seed/reviews_photos.csv
+mongoimport -d sdc -c characteristics --headerline --columnsHaveTypes --drop --type csv seed/characteristics.csv
+mongoimport -d sdc -c characteristicreviews --headerline --columnsHaveTypes --drop --type csv seed/characteristic_reviews.csv
 
 echo "done importing files"
 
