@@ -1,6 +1,6 @@
 FROM node:latest
 
-ENV MONGO_CONNECTION='sdc-mongo' MONGO_DB='sdc' MONGOIP='18.116.66.21'
+ENV MONGO_CONNECTION='sdc-mongo' MONGO_DB='sdc' MONGOIP='18.118.106.168'
 
 WORKDIR /src
 
