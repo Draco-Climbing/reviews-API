@@ -131,6 +131,10 @@ export default function () {
     'transaction time < 150ms': (r) => r.timings.duration < 150,
     // checking each request to ensure that the response time is less than 100ms
     'transaction time < 100ms': (r) => r.timings.duration < 100,
+    // checking each request to ensure that the response time is less than 80ms
+    'transaction time < 80ms': (r) => r.timings.duration < 80,
+    // checking each request to ensure that the response time is less than 60ms
+    'transaction time < 60ms': (r) => r.timings.duration < 60,
   };
 
   group('GET /reviews/ within the first 10%', () => {
