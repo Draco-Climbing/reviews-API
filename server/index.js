@@ -7,14 +7,13 @@ const app = express();
 
 app.use(express.json());
 
-/*
- /reviews/ route is using a function imported from database file, read
- read uses .find() and does the filtering/sorting/object creation and then returns a promise
-*/
-app.get('/reviews/', (req, res) => {
-  // console.log('process env is', process.env);
-  // console.log(`responding to GET request on /reviews/ for ${JSON.stringify(req.query)}`);
+/**
+ * /reviews/ route is using a function imported from database file, read
+ * read uses the mongoDB aggregation pipeline and does the
+ * filtering/sorting/object creation and then returns a promise
+ */
 
+app.get('/reviews/', (req, res) => {
   // ensure product_id query value is passed in
   if (req.query.product_id === undefined) {
     res.status(404).send('Error: invalid product_id provided');
@@ -34,9 +33,6 @@ app.get('/reviews/', (req, res) => {
   })
     .then((results) => {
       // results[response] = results[response] === 'null' ? null : results[response];
-      // console.log(results);
-
-      // console.log('finished searching');
       res.send({
         product_id: req.query.product_id,
         page: (parseInt(req.query.page, 10) || 1),
@@ -66,9 +62,6 @@ app.get('/reviews/meta/', async (req, res) => {
       res.status(404).send('There are no reviews for that product_id or product_id does not exist.');
       return;
     }
-
-    // console.log(chars);
-
     // create and populate characteristics object
     const characteristics = {};
     chars.forEach((item) => {
@@ -88,8 +81,6 @@ app.get('/reviews/meta/', async (req, res) => {
 });
 
 app.post('/reviews/', (req, res) => {
-  // console.log('responding to POST request on /reviews/');
-
   // need to use product_id to insert into reviews
   // into reviews will need to generate a unique id and a date
   /**
