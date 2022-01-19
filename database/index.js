@@ -58,7 +58,7 @@ module.exports.read = function read(type, query) {
             recommend: 1,
             response: 1,
             body: 1,
-            date: 1,
+            date: { $toDate: '$date' },
             reviewer_name: 1,
             helpfulness: 1,
             photos: 1,
