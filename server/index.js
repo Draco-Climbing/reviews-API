@@ -1,11 +1,8 @@
 /* eslint-disable no-console */
-const express = require('express');
-const router = require('./routes/index');
+// import dotenv
+require('dotenv').config();
 
-const app = express();
-
-app.use(express.json());
-app.use('/*', router);
+const app = require('./app');
 
 const port = (process.env.PORT || 8080);
 

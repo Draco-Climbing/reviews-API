@@ -1,4 +1,16 @@
-const { read, create, update } = require('../../database/index');
+/* eslint-disable camelcase */
+const {
+  readReviews,
+  verifyCharacteristics,
+  getLastReviewId,
+  getLastCharacteristicsId,
+  getLastPhotoId,
+  createReview,
+  createReviewPhotos,
+  createCharacteristicReview,
+  updateHelpful,
+  updateReport,
+} = require('../../database/index');
 
 module.exports = {
   read: (req, res) => {
@@ -7,9 +19,10 @@ module.exports = {
       res.status(404).send('Error: invalid product_id provided');
       return;
     }
+    console.log(req.query);
 
     // read will already incorporate the sort and limit numbers
-    read('reviews', {
+    readReviews({
     // set product_id to be an int instead of a string
       product_id: req.query.product_id,
       // read properties from req.query or set to defaults
@@ -58,7 +71,7 @@ module.exports = {
     // read('lastReviewId',{})
     // ])
 
-    read('verifyCharacteristics', { product_id: String(req.body.product_id) })
+    verifyCharacteristics({ product_id: String(req.body.product_id) })
     // can deconstruct the object values in an array into the values variable
       .then(([{ values }]) => {
         // check that the characteristic id being sent with the review corresponds
@@ -70,7 +83,7 @@ module.exports = {
         });
       })
       .then(() => {
-        Promise.all([read('lastReviewId'), read('lastCharacteristicReviewId'), read('lastPhotoId')])
+        Promise.all([getLastReviewId(), getLastCharacteristicsId(), getLastPhotoId()])
           .then(([lastReviewId, lastCharacteristicId, lastPhotoId]) => {
             const { review_id } = lastReviewId;
             const { _id } = lastCharacteristicId;
@@ -94,10 +107,9 @@ module.exports = {
             };
 
             Promise.all(
-              [create('review', [review])]
+              [createReview([review])]
                 .concat(
-                  create(
-                    'characteristicreview',
+                  createCharacteristicReview(
                     Object.keys(req.body.characteristics)
                       .map((item, index) => ({
                         _id: _id + 1 + index,
@@ -106,8 +118,7 @@ module.exports = {
                         value: req.body.characteristics[item],
                       })),
                   ),
-                  create(
-                    'reviewphotos',
+                  createReviewPhotos(
                     req.body.photos.slice(0, 5)
                       .map((photo, i) => ({
                         id: id + 1 + i,
@@ -120,15 +131,7 @@ module.exports = {
               .then(() => {
                 // console.log('documents were created and added to collection successfully');
                 res.status(201).send('review was created successfully');
-              })
-              .catch((err) => {
-                console.error(err);
-                res.status(500).send(err);
               });
-          })
-          .catch((err) => {
-            console.error(err);
-            res.status(500).send(err);
           });
       })
       .catch((err) => {
@@ -140,8 +143,7 @@ module.exports = {
     if (!req.params.review_id) {
       res.status(404).send('Error: invalid review_id provided');
     } else {
-      // console.log(req.params);
-      update('helpful', req.params.review_id)
+      updateHelpful(req.params.review_id)
         .then((response) => {
           if (response.acknowledged) {
             // console.log(response);
@@ -160,8 +162,7 @@ module.exports = {
     if (!req.params.review_id) {
       res.status(404).send('Error: invalid review_id provided');
     } else {
-      // console.log(req.params);
-      update('report', req.params.review_id)
+      updateReport(req.params.review_id)
         .then((response) => {
           if (response.acknowledged) {
             // console.log(response);
