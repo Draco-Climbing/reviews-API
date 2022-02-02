@@ -11,18 +11,30 @@ const {
   updateHelpful,
   updateReport,
 } = require('../../database/index');
+const { handleError } = require('../utils/utils');
+
+// define invalid review ID error for multiple uses
+const invalidReviewIDError = {
+  response: {
+    status: 404,
+    data: { message: 'Error: invalid review_id provided' },
+  },
+};
 
 module.exports = {
   read: (req, res) => {
     // ensure product_id query value is passed in
     if (req.query.product_id === undefined) {
-      res.status(404).send('Error: invalid product_id provided');
-      return;
+      return handleError(res, {
+        response: {
+          status: 404,
+          data: { message: 'Error: invalid product_id provided!' },
+        },
+      });
     }
-    console.log(req.query);
 
     // read will already incorporate the sort and limit numbers
-    readReviews({
+    return readReviews({
     // set product_id to be an int instead of a string
       product_id: req.query.product_id,
       // read properties from req.query or set to defaults
@@ -33,7 +45,6 @@ module.exports = {
       sort: (req.query.sort || 'newest'),
     })
       .then((results) => {
-      // results[response] = results[response] === 'null' ? null : results[response];
         res.send({
           product_id: req.query.product_id,
           page: (parseInt(req.query.page, 10) || 1),
@@ -41,10 +52,7 @@ module.exports = {
           results,
         });
       })
-      .catch((err) => {
-      // console.log(err);
-        res.status(500).send(err);
-      });
+      .catch((err) => handleError(res, err));
   },
   create: (req, res) => {
     // need to use product_id to insert into reviews
@@ -134,47 +142,49 @@ module.exports = {
               });
           });
       })
-      .catch((err) => {
-        console.error(err);
-        res.status(500).send(err);
-      });
+      .catch((err) => handleError(res, err));
   },
   helpful: (req, res) => {
+    const helpfulError = {
+      response: {
+        status: 500,
+        data: { message: 'Server error marking review as helpful' },
+      },
+    };
+
     if (!req.params.review_id) {
-      res.status(404).send('Error: invalid review_id provided');
-    } else {
-      updateHelpful(req.params.review_id)
-        .then((response) => {
-          if (response.acknowledged) {
-            // console.log(response);
-            res.status(204).send();
-          } else {
-            res.status(500).send('server error marking review as helpful');
-          }
-        })
-        .catch((err) => {
-          console.error(err);
-          res.status(500).send('server error marking review as helpful');
-        });
+      return handleError(res, invalidReviewIDError);
     }
+    return updateHelpful(req.params.review_id)
+      .then((response) => {
+        if (response.acknowledged) {
+          res.status(204).send();
+        } else {
+          handleError(res, helpfulError);
+        }
+      })
+      .catch((err) => {
+        handleError(res, err);
+      });
   },
   report: (req, res) => {
+    const reportError = {
+      response: {
+        status: 500,
+        data: { message: 'Server error reporting review' },
+      },
+    };
+
     if (!req.params.review_id) {
-      res.status(404).send('Error: invalid review_id provided');
-    } else {
-      updateReport(req.params.review_id)
-        .then((response) => {
-          if (response.acknowledged) {
-            // console.log(response);
-            res.status(204).send();
-          } else {
-            res.status(500).send('server error reporting review');
-          }
-        })
-        .catch((err) => {
-          console.error(err);
-          res.status(500).send('server error reporting review');
-        });
+      return handleError(res, invalidReviewIDError);
     }
+    return updateReport(req.params.review_id)
+      .then((response) => {
+        if (response.acknowledged) {
+          return res.status(204).send();
+        }
+        return handleError(res, reportError);
+      })
+      .catch((err) => handleError(res, err));
   },
 };
